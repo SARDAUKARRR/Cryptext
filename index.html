@@ -1,0 +1,455 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Advanced Encryption Tool</title>
+    
+    <!-- Required Libraries -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.2.0/crypto-js.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pako/2.1.0/pako.min.js"></script>
+    
+    <!-- Google Fonts import removed for simplicity -->
+
+    <style>
+        /* General Styling - Dark/Gray Theme */
+        :root {
+            --bg-color: #000000; /* Solid Black Background */
+            --container-bg: rgba(20, 20, 20, 0.85);
+            --text-color: #e0e0e0;
+            --label-color: #a0a0a0;
+            --border-color: #333;
+            --primary-color: #00ff41; /* Matrix Green */
+            --primary-hover: #33ff66;
+            --secondary-color: #444;
+            --secondary-hover: #555;
+            --error-bg: #4d1212;
+            --error-text: #ff8a8a;
+            --success-bg: #0f3d1a;
+            --success-text: #8aff9b;
+            --shadow-color: rgba(0, 255, 65, 0.15);
+        }
+
+        body {
+            font-family: Consolas, 'Courier New', monospace; /* System monospaced font */
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 2rem;
+            box-sizing: border-box;
+        }
+        
+        .container {
+            position: relative;
+            width: 100%;
+            max-width: 750px;
+            background-color: var(--container-bg);
+            padding: 2.5rem;
+            border-radius: 16px;
+            box-shadow: 0 8px 32px var(--shadow-color);
+            border: 1px solid var(--border-color);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            z-index: 1;
+        }
+
+        /* Form Elements */
+        .input-group {
+            margin-bottom: 1.5rem;
+        }
+        .input-group:last-of-type {
+            margin-bottom: 0;
+        }
+
+        textarea, input[type="password"] {
+            width: 100%;
+            padding: 0.8rem 1rem;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            font-size: 1rem;
+            box-sizing: border-box;
+            transition: border-color 0.2s, box-shadow 0.2s;
+            background-color: #1a1a1a;
+            color: var(--text-color);
+            font-family: Consolas, 'Courier New', monospace; /* System monospaced font */
+        }
+        
+        /* Increased textarea height */
+        textarea {
+            min-height: 240px;
+            resize: vertical;
+        }
+
+        textarea:focus, input[type="password"]:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 4px rgba(0, 255, 65, 0.2);
+        }
+
+        /* Button Group */
+        .button-group {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+            margin-top: 1.5rem;
+        }
+
+        button {
+            padding: 0.8rem;
+            font-size: 1.25rem; /* For icon/emoji size */
+            font-weight: 600;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s ease-in-out;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            line-height: 1;
+        }
+
+        button:active {
+            transform: scale(0.97);
+        }
+
+        #encrypt-btn {
+             border: 1px solid var(--primary-color);
+             background-color: transparent;
+             color: var(--primary-color);
+        }
+        #encrypt-btn:hover {
+            background-color: var(--primary-color);
+            color: #000;
+            box-shadow: 0 0 20px var(--shadow-color);
+        }
+        #encrypt-btn:hover svg {
+            fill: #000;
+        }
+
+        #decrypt-btn {
+            border: 1px solid #888;
+            color: #888;
+            background-color: transparent;
+        }
+        #decrypt-btn:hover {
+            background-color: #888;
+            color: #000;
+            box-shadow: 0 0 20px rgba(136, 136, 136, 0.25);
+        }
+        #decrypt-btn:hover svg {
+            fill: #000;
+        }
+        
+        button svg {
+            fill: currentColor;
+            transition: fill 0.2s;
+        }
+        
+        #output-area {
+            background-color: #101010;
+            cursor: default;
+        }
+        
+        .output-container {
+            position: relative;
+        }
+
+        #copy-btn {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background-color: #333;
+            color: #ccc;
+            border: 1px solid #555;
+            border-radius: 6px;
+            padding: 5px 10px;
+            cursor: pointer;
+            opacity: 0;
+            transition: opacity 0.2s;
+            line-height: 1;
+        }
+        .output-container:hover #copy-btn {
+            opacity: 1;
+        }
+        #copy-btn:hover {
+            background-color: #444;
+            color: white;
+        }
+        #copy-btn.copied {
+            color: var(--primary-color);
+        }
+
+        #status-message {
+            margin-top: 1.5rem;
+            padding: 1rem;
+            border-radius: 8px;
+            text-align: center;
+            font-weight: 500;
+            display: none;
+            animation: fadeIn 0.5s;
+        }
+        .status-success {
+            background-color: var(--success-bg);
+            color: var(--success-text);
+            border: 1px solid #1a5325;
+        }
+        .status-error {
+            background-color: var(--error-bg);
+            color: var(--error-text);
+            border: 1px solid #8b3232;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Stats Container */
+        .stats-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 1rem;
+            margin-top: 1.5rem;
+        }
+        .stat-box {
+            background-color: #1a1a1a;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 1rem;
+            text-align: center;
+        }
+        .stat-box .label {
+            font-size: 0.8rem;
+            color: var(--label-color);
+            margin-bottom: 0.5rem;
+            display: block;
+        }
+        .stat-box .value {
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: var(--primary-color);
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        
+        <div class="input-group">
+            <textarea id="text-input" placeholder="Text..."></textarea>
+        </div>
+
+        <div class="input-group">
+            <input type="password" id="password-input" placeholder="Password...">
+        </div>
+
+        <div class="button-group">
+            <button id="encrypt-btn" title="Encrypt">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" viewBox="0 0 16 16"><path d="M8 1a2 2 0 0 1 2 2v4H6V3a2 2 0 0 1 2-2zm3 6V3a3 3 0 0 0-6 0v4a2 2 0 0 0-2 2v5a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2z"/></svg>
+            </button>
+            <button id="decrypt-btn" title="Decrypt">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" viewBox="0 0 16 16"><path d="M11 1a2 2 0 0 0-2 2v4a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2h5V3a3 3 0 0 1 6 0v4a.5.5 0 0 1-1 0V3a2 2 0 0 0-2-2z"/></svg>
+            </button>
+        </div>
+
+        <div class="input-group output-container" style="margin-top: 1.5rem;">
+            <textarea id="output-area" readonly placeholder="Result..."></textarea>
+            <button id="copy-btn" title="Copy Result">
+                <svg class="copy-icon" xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path d="M4 1.5H3a2 2 0 0 0-2 2V14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V3.5a2 2 0 0 0-2-2h-1v1h1a1 1 0 0 1 1 1V14a1 1 0 0 1-1-1H3a1 1 0 0 1-1-1V3.5a1 1 0 0 1 1-1h1v-1z"/><path d="M9.5 1a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-1 0v-1a.5.5 0 0 1 .5-.5zm-3 0a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-1 0v-1a.5.5 0 0 1 .5-.5zm1.5 0a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-1 0v-1a.5.5 0 0 1 .5-.5z"/></svg>
+            </button>
+        </div>
+        
+        <div class="stats-container">
+            <div class="stat-box">
+                <span class="label">Original</span>
+                <span class="value" id="stat-original">- B</span>
+            </div>
+            <div class="stat-box">
+                <span class="label">Compressed</span>
+                <span class="value" id="stat-compressed">- B</span>
+            </div>
+            <div class="stat-box">
+                <span class="label">Ratio</span>
+                <span class="value" id="stat-ratio">- %</span>
+            </div>
+            <div class="stat-box">
+                <span class="label">Time</span>
+                <span class="value" id="stat-time">- ms</span>
+            </div>
+        </div>
+
+        <div id="status-message"></div>
+    </div>
+
+    <script>
+        // --- DOM ELEMENT SELECTION ---
+        const textInput = document.getElementById('text-input');
+        const passwordInput = document.getElementById('password-input');
+        const encryptBtn = document.getElementById('encrypt-btn');
+        const decryptBtn = document.getElementById('decrypt-btn');
+        const outputArea = document.getElementById('output-area');
+        const statusMessage = document.getElementById('status-message');
+        const copyBtn = document.getElementById('copy-btn');
+        const statOriginal = document.getElementById('stat-original');
+        const statCompressed = document.getElementById('stat-compressed');
+        const statRatio = document.getElementById('stat-ratio');
+        const statTime = document.getElementById('stat-time');
+
+
+        // --- CRYPTO CONFIGURATION ---
+        const SALT_SIZE = 16;
+        const IV_SIZE = 12;
+        const KEY_SIZE_WORDS = 256 / 32;
+        const ITERATIONS = 480000;
+        const DELIMITER = '::';
+
+        // --- HELPER FUNCTIONS ---
+        function showStatus(message, isError = false) {
+            statusMessage.textContent = message;
+            statusMessage.className = isError ? 'status-error' : 'status-success';
+            statusMessage.style.display = 'block';
+             // Hide status message after 3 seconds
+            setTimeout(() => {
+                statusMessage.style.display = 'none';
+            }, 3000);
+        }
+
+        function clearStats() {
+            statOriginal.textContent = '- B';
+            statCompressed.textContent = '- B';
+            statRatio.textContent = '- %';
+            statTime.textContent = '- ms';
+        }
+        
+        function wordToUint8(wordArray) {
+            const l = wordArray.sigBytes;
+            const words = wordArray.words;
+            const result = new Uint8Array(l);
+            var i = 0;
+            while (i < l) {
+                const w = words[i / 4 | 0];
+                const b = (w >> (24 - (i % 4) * 8)) & 0xff;
+                result[i] = b;
+                i++;
+            }
+            return result;
+        }
+
+        // --- ENCRYPTION LOGIC ---
+        encryptBtn.addEventListener('click', () => {
+            const plaintext = textInput.value;
+            const password = passwordInput.value;
+            if (!plaintext || !password) {
+                showStatus('Text and password are required.', true);
+                return;
+            }
+            try {
+                const startTime = performance.now();
+
+                const originalSize = new Blob([plaintext]).size;
+                const compressed = pako.deflate(plaintext);
+                const compressedSize = compressed.length;
+                const ratio = originalSize > 0 ? (1 - (compressedSize / originalSize)) * 100 : 0;
+
+                const compressedWa = CryptoJS.lib.WordArray.create(compressed);
+                const salt = CryptoJS.lib.WordArray.random(SALT_SIZE);
+                const iv = CryptoJS.lib.WordArray.random(IV_SIZE);
+                const key = CryptoJS.PBKDF2(password, salt, {
+                    keySize: KEY_SIZE_WORDS,
+                    iterations: ITERATIONS,
+                    hasher: CryptoJS.algo.SHA256
+                });
+                const encrypted = CryptoJS.AES.encrypt(compressedWa, key, {
+                    iv: iv,
+                    padding: CryptoJS.pad.Pkcs7,
+                    mode: CryptoJS.mode.CBC
+                });
+                const saltB64 = CryptoJS.enc.Base64.stringify(salt);
+                const ivB64 = CryptoJS.enc.Base64.stringify(iv);
+                const ciphertextB64 = encrypted.toString();
+                const result = `${saltB64}${DELIMITER}${ivB64}${DELIMITER}${ciphertextB64}`;
+                
+                const endTime = performance.now();
+                const duration = endTime - startTime;
+
+                outputArea.value = result;
+                showStatus('Encryption successful!', false);
+                
+                // Update stats
+                statOriginal.textContent = `${originalSize} B`;
+                statCompressed.textContent = `${compressedSize} B`;
+                statRatio.textContent = `${ratio.toFixed(2)} %`;
+                statTime.textContent = `${duration.toFixed(0)} ms`;
+
+            } catch (e) {
+                showStatus('Encryption error: ' + e.message, true);
+                clearStats();
+            }
+        });
+
+        // --- DECRYPTION LOGIC ---
+        decryptBtn.addEventListener('click', () => {
+            const encryptedText = textInput.value;
+            const password = passwordInput.value;
+            if (!encryptedText || !password) {
+                showStatus('Encrypted text and password are required.', true);
+                return;
+            }
+            try {
+                const startTime = performance.now();
+
+                const parts = encryptedText.split(DELIMITER);
+                if (parts.length !== 3) throw new Error('Invalid format.');
+                
+                const salt = CryptoJS.enc.Base64.parse(parts[0]);
+                const iv = CryptoJS.enc.Base64.parse(parts[1]);
+                const ciphertextB64 = parts[2];
+                const key = CryptoJS.PBKDF2(password, salt, {
+                    keySize: KEY_SIZE_WORDS,
+                    iterations: ITERATIONS,
+                    hasher: CryptoJS.algo.SHA256
+                });
+                const decryptedWa = CryptoJS.AES.decrypt(ciphertextB64, key, {
+                    iv: iv,
+                    padding: CryptoJS.pad.Pkcs7,
+                    mode: CryptoJS.mode.CBC
+                });
+                const decryptedBytes = wordToUint8(decryptedWa);
+                if (decryptedBytes.length === 0) throw new Error('Password incorrect or data corrupted.');
+                const decompressed = pako.inflate(decryptedBytes, { to: 'string' });
+                
+                const endTime = performance.now();
+                const duration = endTime - startTime;
+
+                outputArea.value = decompressed;
+                showStatus('Decryption successful!', false);
+                
+                // Clear irrelevant stats and update time
+                statOriginal.textContent = '- B';
+                statCompressed.textContent = '- B';
+                statRatio.textContent = '- %';
+                statTime.textContent = `${duration.toFixed(0)} ms`;
+
+            } catch (e) {
+                showStatus('Decryption failed! ' + e.message, true);
+                outputArea.value = '';
+                clearStats();
+            }
+        });
+
+        // --- COPY TO CLIPBOARD ---
+        copyBtn.addEventListener('click', () => {
+            if (!outputArea.value) return;
+            navigator.clipboard.writeText(outputArea.value).then(() => {
+                copyBtn.classList.add('copied');
+                setTimeout(() => {
+                    copyBtn.classList.remove('copied');
+                }, 1500);
+            });
+        });
+
+    </script>
+</body>
+</html>
