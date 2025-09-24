@@ -142,6 +142,3 @@ Always use a strong, unique password.
 Ensure your device is free from malware.
 
 This tool is provided "as is" without warranty of any kind.
-
-License
-This project is licensed under the MIT License.
