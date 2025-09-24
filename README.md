@@ -1,4 +1,4 @@
-Cryptext   https://sardaukarrr.github.io/Cryptext/ 
+Cryptext   https://akadirsanli.github.io/Cryptext/ 
 A minimalist, client-side, secure text encryption tool that runs entirely in your browser. No server, no data storage, just pure cryptography.
 
 About Cryptext
